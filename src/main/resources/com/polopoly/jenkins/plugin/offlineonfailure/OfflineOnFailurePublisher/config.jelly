@@ -1,3 +1,8 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-  <!-- nothing to configure -->
+
+  <f:advanced title="Advanced">
+      <f:entry title="${%Always take offline}">
+          <f:checkbox name="alwaysTakeOffline" field="alwaysTakeOffline" default="unchecked" />
+      </f:entry>
+  </f:advanced>
 </j:jelly>

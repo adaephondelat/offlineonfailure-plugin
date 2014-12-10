@@ -1,5 +1,11 @@
 package com.polopoly.jenkins.plugin.offlineonfailure;
 
+import java.io.IOException;
+import java.io.PrintStream;
+
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
+
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.*;
@@ -9,11 +15,6 @@ import hudson.tasks.BuildStepMonitor;
 import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import net.sf.json.JSONObject;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
-
-import java.io.IOException;
-import java.io.PrintStream;
 
 /**
  * Plugin that will take a node offline immediately after
@@ -22,8 +23,11 @@ import java.io.PrintStream;
 public class OfflineOnFailurePublisher
     extends Notifier
 {
+    private boolean alwaysTakeOffline;
+
     @DataBoundConstructor
-    public OfflineOnFailurePublisher() {
+    public OfflineOnFailurePublisher(boolean alwaysTakeOffline) {
+        this.alwaysTakeOffline = alwaysTakeOffline;
     }
 
     @Override
@@ -33,21 +37,30 @@ public class OfflineOnFailurePublisher
         throws InterruptedException,
                IOException
     {
-        if (build.getResult().isWorseOrEqualTo(Result.FAILURE)) {
+        if (build.getResult().isWorseOrEqualTo(Result.FAILURE) || alwaysTakeOffline) {
 
             Node buildNode = build.getBuiltOn();
             PrintStream log = listener.getLogger();
 
             // Never set master offline
             if (Hudson.getInstance() != buildNode) {
-                buildNode.toComputer().setTemporarilyOffline(true, OfflineCause.create(Messages._OfflineOnFailureCause_Description()));
-                log.println(Messages.OfflineOnFailure_FailureDetected());
+                if (!alwaysTakeOffline) {
+                    buildNode.toComputer().setTemporarilyOffline(true, OfflineCause.create(Messages._OfflineOnFailureCause_Description()));
+                    log.println(Messages.OfflineOnFailure_FailureDetected());
+                } else {
+                    buildNode.toComputer().setTemporarilyOffline(true, OfflineCause.create(Messages._OfflineAlwaysCause_Description()));
+                    log.println(Messages.OfflineAlways_FailureDetected());
+                }
             } else {
                 log.println(Messages.OfflineOnFailure_FailureDetectedOnMaster());
             }
         }
 
         return true;
+    }
+
+    public boolean getAlwaysTakeOffline() {
+        return alwaysTakeOffline;
     }
 
     public BuildStepMonitor getRequiredMonitorService()
