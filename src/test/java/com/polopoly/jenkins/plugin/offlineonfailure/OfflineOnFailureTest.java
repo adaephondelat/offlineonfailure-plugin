@@ -1,13 +1,12 @@
 package com.polopoly.jenkins.plugin.offlineonfailure;
 
+import org.jvnet.hudson.test.HudsonTestCase;
+
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
-import hudson.model.Hudson;
 import hudson.model.Label;
 import hudson.tasks.Builder;
 import hudson.tasks.Shell;
-
-import org.jvnet.hudson.test.HudsonTestCase;
 
 public class OfflineOnFailureTest
     extends HudsonTestCase
@@ -18,31 +17,44 @@ public class OfflineOnFailureTest
     public void test_node_is_not_taken_offline_on_success()
         throws Exception
     {
-        performBuildAndAssertNodeStatus(SUCCESS_SHELL_BUILDER, "not_master", false);
+        performBuildAndAssertNodeStatus(SUCCESS_SHELL_BUILDER, "not_master", false, false);
+    }
+
+    public void test_node_is_taken_offline_on_success_if_alwaysOffline_is_true()
+            throws Exception
+    {
+        performBuildAndAssertNodeStatus(SUCCESS_SHELL_BUILDER, "not_master", true, true);
     }
 
     public void test_node_is_taken_offline_on_failure()
         throws Exception
     {
-        performBuildAndAssertNodeStatus(FAILURE_SHELL_BUILDER, "not_master", true);
+        performBuildAndAssertNodeStatus(FAILURE_SHELL_BUILDER, "not_master", true, false);
     }
 
     public void test_master_node_is_not_taken_offline_on_failure()
         throws Exception
     {
-        performBuildAndAssertNodeStatus(FAILURE_SHELL_BUILDER, "master", false);
+        performBuildAndAssertNodeStatus(FAILURE_SHELL_BUILDER, "master", false, false);
+    }
+
+    public void test_master_node_is_not_taken_offline_on_failure_even_if_always()
+            throws Exception
+    {
+        performBuildAndAssertNodeStatus(FAILURE_SHELL_BUILDER, "master", false, true);
     }
 
 
     private void performBuildAndAssertNodeStatus(final Builder builder,
                                                  final String label,
-                                                 final boolean nodeIsExpectedToBeTakenOffline)
+                                                 final boolean nodeIsExpectedToBeTakenOffline,
+                                                 final boolean alwaysOffline)
         throws Exception
     {
         FreeStyleProject project = createFreeStyleProject();
         project.getBuildersList().add(builder);
 
-        OfflineOnFailurePublisher publisher = new OfflineOnFailurePublisher();
+        OfflineOnFailurePublisher publisher = new OfflineOnFailurePublisher(alwaysOffline);
 
         project.getPublishersList().add(publisher);
 
